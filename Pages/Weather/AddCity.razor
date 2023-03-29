@@ -1,0 +1,66 @@
+﻿@page "/cities/add"
+@using WeatherApp.Models;
+@using WeatherApp.Services;
+@inject NavigationManager navMan
+@inject IWeatherService weatherService
+
+<h3>add city</h3>
+
+<EditForm Model="@city" Context="editContext" OnValidSubmit="@Submit">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>city name</label>
+        <ValidationMessage For="@(() => city.CityName)" />
+        <InputText placeholder="City..." @bind-Value="city.CityName" class="form-control"></InputText>
+    </div>
+    <div class="form-group">
+        <label>country</label>
+        <ValidationMessage For="@(() => city.CountryCode)" />
+        <InputSelect @bind-Value="@city.CountryCode" class="form-control">
+            <option value=""></option>
+            @foreach (var country in countries.OrderBy(c => c.CountryName))
+            {
+                <option value="@country.CountryCode">@country.CountryName</option>
+            }
+
+        </InputSelect>
+    </div>
+    <div class="form-group">
+        <label>latidute</label>
+        <ValidationMessage For="@(() => city.Latitude)" />
+        <InputNumber @bind-Value="@city.Latitude" step="0.1" min="-180" max="180" class="form-control"></InputNumber>
+
+    </div>
+    <div class="form-group">
+        <label>longitude</label>
+        <ValidationMessage For="@(() => city.Longitude)" />
+        <InputNumber @bind-Value="@city.Longitude" step="0.1" min="-180" max="180" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        @if(submitted != true)
+        {
+            <button type="submit" class="btn btn-primary">add</button>
+        }
+    </div>
+</EditForm>
+
+@code {
+    City city = new City();//creates new object of city
+    List<Country> countries;//for the dropdown
+    bool submitted = false;
+    protected override void OnInitialized()
+    {
+        countries = weatherService.GetCountries();
+    }
+
+
+    private void Submit()
+    {
+        submitted = true;//sets submitted to true, that the button cant be clicked again immediately
+        weatherService.AddCity(city);
+        navMan.NavigateTo("/cities");
+        submitted = false;
+    }
+
+}

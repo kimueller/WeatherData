@@ -1,0 +1,85 @@
+﻿@page "/cities"
+@using WeatherApp.Models.DTOs;
+@using WeatherApp.Models;
+@using WeatherApp.Services;
+@inject IWeatherService weatherService
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory ClientFactory
+
+<h3>cities</h3>
+<h5>
+    country <select @onchange="CountryChanged" bind-value="@countryCode">
+        <option value="@string.Empty">all</option>
+        @foreach (var country in countries)
+        {
+            <option value="@country.CountryCode">@country.CountryName.ToLower()</option>
+        }
+    </select>
+</h5>
+    
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>country</th>
+            <th>city</th>
+            <th>description</th>
+            <th class="text-center">curr. temp</th>
+            <th class="text-center">min. temp</th>
+            <th class="text-center">max. temp</th>
+            <th class="text-center"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var city in weatherData)
+        {
+            <tr>
+                <td>@city.Sys.Country.ToLower()</td>
+                <td>@city.Name.ToLower()</td>
+                <td>@city.Weather.FirstOrDefault().WeatherDescription.ToLower()</td>
+                <td class="text-center">@city.Main.Temperature °C</td>
+                <td class="text-center">@city.Main.MinTemperature °C</td>
+                <td class="text-center">@city.Main.MaxTemperature °C</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    List<City> cities;
+    List<Country> countries;
+    List<WeatherData> weatherData = new List<WeatherData>();
+
+    //variable for drop-down
+    string countryCode = string.Empty;
+
+
+    /// <summary>
+    /// if the drop-down gets changed this function gets called up
+    /// </summary>
+    /// <param name="change">dropdown value changed</param>
+    private async void CountryChanged(ChangeEventArgs change)
+    {
+        countryCode = change.Value.ToString();//sets the countryCode to the changed Value
+        cities = weatherService.GetCities(countryCode);//returns a list, that is filtered for countries
+        weatherData.Clear();
+        foreach (var city in cities)
+        {
+            var weather = await weatherService.GetWeatherForecastAsync(city.CityName);//calls the api with the city name
+            weatherData.Add(weather);//adds them to the weatherdata list
+        }
+        StateHasChanged(); // Updates the UI
+
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        countries = weatherService.GetRegisterdCountries();//gets filled with countries that have a city registerd
+        cities = weatherService.GetCities();//gets all cities out of the db
+        foreach(var city in cities)
+        {
+            var weather = await weatherService.GetWeatherForecastAsync(city.CityName);
+            weatherData.Add(weather);
+        }
+    }
+
+}
